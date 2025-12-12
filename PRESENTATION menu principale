@@ -1,0 +1,111 @@
+package presentation;
+
+import metier.Utilisateur;
+import javax.swing.*;
+import java.awt.*;
+
+public class MenuPrincipal extends JFrame {
+    
+    public MenuPrincipal(Utilisateur u) {
+        setTitle("Tableau de Bord - Laboratoire");
+        setSize(600, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+
+        
+        JLabel lblTitre = new JLabel("Bienvenue, " + u.getRole() + " " + u.getNom(), SwingConstants.CENTER);
+        lblTitre.setFont(new Font("Arial", Font.BOLD, 18));
+        lblTitre.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        lblTitre.setOpaque(true);
+        lblTitre.setBackground(new Color(230, 240, 255)); 
+        add(lblTitre, BorderLayout.NORTH);
+
+        
+        JPanel panelBoutons = new JPanel(new GridLayout(3, 2, 20, 20));
+        panelBoutons.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+        panelBoutons.setBackground(Color.WHITE);
+
+        JButton btnPatients = createMenuButton("Gestion des Patients");
+        JButton btnAnalyses = createMenuButton("Catalogue Analyses");
+        JButton btnDossiers = createMenuButton("Nouveau Dossier");
+        JButton btnemployer = createMenuButton ("Gestion  employer");
+        JButton btnStock = createMenuButton ("Gestion Stock");
+
+        
+       
+        panelBoutons.add(btnPatients);
+        panelBoutons.add(btnAnalyses);
+        panelBoutons.add(btnDossiers);
+        panelBoutons.add(btnemployer);
+        panelBoutons.add(btnStock);
+        
+        
+          configurerDroits(u.getRole(), btnemployer, btnStock, btnAnalyses); 
+
+
+
+        
+        
+        
+
+        add(panelBoutons, BorderLayout.CENTER);
+        
+        JPanel pan = new JPanel();
+        add(pan,BorderLayout.SOUTH);
+        JButton btnQuitter = createMenuButton ("Deconecter");
+        pan.add(btnQuitter);
+        btnQuitter.setBackground(new Color(255, 100, 100)); 
+        btnPatients.addActionListener(e -> new GestionPatients().setVisible(true));
+        btnemployer.addActionListener(e -> new GestionEmployer().setVisible(true));
+        btnAnalyses.addActionListener(e-> new CatalogueAnalyses().setVisible(true));
+        btnDossiers.addActionListener(e-> new NouveauDossier(u).setVisible(true));
+        btnStock.addActionListener(e->new GestionStock().setVisible(true));
+        
+        
+        btnQuitter.addActionListener(e -> { new LoginLabo().setVisible(true); 
+        this.dispose();
+        });
+        
+       
+        
+        
+       
+    }
+    
+private void configurerDroits(String role, JButton btnEmp, JButton btnStock, JButton btnAna) {
+    String r = role.toLowerCase(); 
+
+    if (r.equals("admin")) {
+    } 
+    else if (r.equals("biologiste")) {
+        btnEmp.setEnabled(false);
+        btnEmp.setBackground(Color.LIGHT_GRAY);
+        btnEmp.setToolTipText("Accès réservé aux administrateurs");
+    } 
+    else if (r.equals("secretaire")) {
+        btnEmp.setEnabled(false);
+        btnEmp.setBackground(Color.LIGHT_GRAY);
+        btnEmp.setToolTipText("Accès réservé aux administrateurs");
+
+        btnStock.setEnabled(false);
+        btnStock.setBackground(Color.LIGHT_GRAY);
+        btnStock.setToolTipText("Accès réservé aux administrateurs et biologiste");
+
+
+        btnAna.setEnabled(false);
+        btnAna.setBackground(Color.LIGHT_GRAY);
+        btnAna.setToolTipText("Accès réservé aux administrateurs et biologiste");
+
+    }
+}
+
+
+    private JButton createMenuButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Arial", Font.PLAIN, 14));
+        btn.setBackground(new Color(100, 149, 237)); 
+        btn.setForeground(Color.WHITE);
+        return btn;
+    }
+}
