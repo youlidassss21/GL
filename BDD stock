@@ -1,0 +1,80 @@
+package accesDonnees;
+
+import metier.Produit;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class StockManager {
+    private final Connection connection;
+
+    public StockManager() {
+        this.connection = DatabaseConnection.getInstance().getConnection();
+    }
+
+    public void ajouterProduit(Produit p) throws SQLException {
+        String sql = "INSERT INTO stock (nom_produit, quantite, seuil_alerte, fournisseur) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, p.getNomProduit());
+            ps.setInt(2, p.getQuantite());
+            ps.setInt(3, p.getSeuilAlerte());
+            ps.setString(4, p.getFournisseur());
+            ps.executeUpdate();
+        }
+    }
+
+    public List<Produit> listerProduits() {
+        List<Produit> liste = new ArrayList<>();
+        String sql = "SELECT * FROM stock";
+        try (Statement st = connection.createStatement(); ResultSet rs = st.executeQuery(sql)) {
+            while (rs.next()) {
+                liste.add(new Produit(
+                    rs.getInt("id"),
+                    rs.getString("nom_produit"),
+                    rs.getInt("quantite"),
+                    rs.getInt("seuil_alerte"),
+                    rs.getString("fournisseur")
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return liste;
+    }
+
+    public void supprimerProduit(int id) throws SQLException {
+        String sql = "DELETE FROM stock WHERE id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+    }
+    
+    public void mettreAJourQuantite(int id, int nouvelleQuantite) throws SQLException {
+        String sql = "UPDATE stock SET quantite = ? WHERE id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, nouvelleQuantite);
+            ps.setInt(2, id);
+            ps.executeUpdate();
+        }
+    }
+    
+    public List<Produit> getProduitsEnAlerte() {
+        List<Produit> liste = new ArrayList<>();
+        String sql = "SELECT * FROM stock WHERE quantite <= seuil_alerte";
+        try (Statement st = connection.createStatement(); ResultSet rs = st.executeQuery(sql)) {
+            while (rs.next()) {
+                liste.add(new Produit(
+                    rs.getInt("id"),
+                    rs.getString("nom_produit"),
+                    rs.getInt("quantite"),
+                    rs.getInt("seuil_alerte"),
+                    rs.getString("fournisseur")
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return liste;
+    }
+}
