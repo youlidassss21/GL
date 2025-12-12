@@ -1,0 +1,63 @@
+package accesDonnees;
+
+import metier.Analyse;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class AnalyseManager {
+    private final Connection connection;
+
+    public AnalyseManager() {
+        this.connection = DatabaseConnection.getInstance().getConnection();
+    }
+
+    
+    public void ajouterAnalyse(Analyse a) throws SQLException {
+        
+        String sql = "INSERT INTO analyses_types (nom_analyse, prix, valeurs_reference, produit_id) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, a.getNomAnalyse());
+            ps.setDouble(2, a.getPrix());
+            ps.setString(3, a.getValeursReference());
+            
+           
+            if (a.getProduitId() > 0) {
+                ps.setInt(4, a.getProduitId());
+            } else {
+                ps.setNull(4, java.sql.Types.INTEGER);
+            }
+            
+            ps.executeUpdate();
+        }
+    }
+
+  
+    public List<Analyse> listerAnalyses() {
+        List<Analyse> liste = new ArrayList<>();
+        String sql = "SELECT * FROM analyses_types";
+        try (Statement st = connection.createStatement(); ResultSet rs = st.executeQuery(sql)) {
+            while (rs.next()) {
+                liste.add(new Analyse(
+                    rs.getInt("id"),
+                    rs.getString("nom_analyse"),
+                    rs.getDouble("prix"),
+                    rs.getString("valeurs_reference"),
+                    rs.getInt("produit_id") 
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return liste;
+    }
+
+    
+    public void supprimerAnalyse(int id) throws SQLException {
+        String sql = "DELETE FROM analyses_types WHERE id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+    }
+}
