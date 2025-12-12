@@ -1,0 +1,198 @@
+package presentation;
+
+import accesDonnees.AnalyseManager;
+import accesDonnees.DossierManager;
+import accesDonnees.PatientManager;
+import metier.Analyse;
+import metier.Dossier;
+import metier.Patient;
+import metier.Utilisateur;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+public class NouveauDossier extends JFrame {
+
+    private final PatientManager patientManager = new PatientManager();
+    private final AnalyseManager analyseManager = new AnalyseManager();
+    private final DossierManager dossierManager = new DossierManager();
+    
+    private final Utilisateur utilisateurConnecte;
+
+    // Composants
+    private JComboBox<PatientItem> cbPatients;
+    private JTable tableAnalyses;
+    private DefaultTableModel modelAnalyses;
+    private JLabel lblTotal;
+    private double total = 0.0;
+
+    public NouveauDossier(Utilisateur u) {
+        this.utilisateurConnecte = u;
+        
+        setTitle("Création Nouveau Dossier");
+        setSize(850, 600);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        
+        
+        JPanel panelHaut = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15));
+        panelHaut.setBorder(BorderFactory.createTitledBorder("Sélection du Patient"));
+        panelHaut.setBackground(new Color(240, 248, 255));
+        
+        cbPatients = new JComboBox<>();
+        cbPatients.setPreferredSize(new Dimension(300, 30));
+        chargerPatients(); 
+        
+        panelHaut.add(new JLabel("Patient :"));
+        panelHaut.add(cbPatients);
+        
+        
+        String[] colonnes = {"Sélection", "ID", "Analyse", "Prix (DA)", "Produit ID"};
+        
+        modelAnalyses = new DefaultTableModel(colonnes, 0) {
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == 0) return Boolean.class; 
+                return super.getColumnClass(columnIndex);
+            }
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 0; 
+            }
+        };
+        
+        tableAnalyses = new JTable(modelAnalyses);
+        tableAnalyses.setRowHeight(25);
+        
+        tableAnalyses.removeColumn(tableAnalyses.getColumnModel().getColumn(4));
+        
+        chargerAnalyses(); 
+        
+        modelAnalyses.addTableModelListener(e -> calculerTotal());
+
+        JScrollPane scrollPane = new JScrollPane(tableAnalyses);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Sélectionnez les examens à effectuer"));
+
+        JPanel panelBas = new JPanel(new BorderLayout());
+        panelBas.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        
+        lblTotal = new JLabel("Total : 0.0 DA");
+        lblTotal.setFont(new Font("Arial", Font.BOLD, 22));
+        lblTotal.setForeground(new Color(0, 100, 0)); 
+        
+        JButton btnValider = new JButton("Créer le Dossier");
+        btnValider.setFont(new Font("Arial", Font.BOLD, 14));
+        btnValider.setBackground(new Color(60, 179, 113));
+        btnValider.setForeground(Color.WHITE);
+        btnValider.setPreferredSize(new Dimension(200, 45));
+        
+        btnValider.addActionListener(e -> validerDossier());
+
+        panelBas.add(lblTotal, BorderLayout.WEST);
+        panelBas.add(btnValider, BorderLayout.EAST);
+
+        add(panelHaut, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
+        add(panelBas, BorderLayout.SOUTH);
+    }
+
+    private void chargerPatients() {
+        List<Patient> patients = patientManager.listerPatients();
+        for (Patient p : patients) {
+            cbPatients.addItem(new PatientItem(p));
+        }
+    }
+
+    private void chargerAnalyses() {
+        List<Analyse> analyses = analyseManager.listerAnalyses();
+        for (Analyse a : analyses) {
+            modelAnalyses.addRow(new Object[]{
+                false, 
+                a.getId(),
+                a.getNomAnalyse(),
+                a.getPrix(),
+                a.getProduitId() 
+            });
+        }
+    }
+
+    private void calculerTotal() {
+        total = 0.0;
+        for (int i = 0; i < modelAnalyses.getRowCount(); i++) {
+            Boolean isChecked = (Boolean) modelAnalyses.getValueAt(i, 0);
+            if (isChecked != null && isChecked) {
+                double prix = (double) modelAnalyses.getValueAt(i, 3);
+                total += prix;
+            }
+        }
+        lblTotal.setText("Total : " + total + " DA");
+    }
+
+    private void validerDossier() {
+        try {
+            PatientItem item = (PatientItem) cbPatients.getSelectedItem();
+            if (item == null) {
+                JOptionPane.showMessageDialog(this, "Veuillez sélectionner un patient.");
+                return;
+            }
+            Patient p = item.patient;
+
+            List<Analyse> analysesChoisies = new ArrayList<>();
+            int nbProduitsLies = 0;
+
+            for (int i = 0; i < modelAnalyses.getRowCount(); i++) {
+                Boolean isChecked = (Boolean) modelAnalyses.getValueAt(i, 0);
+                if (isChecked != null && isChecked) {
+                    int id = (int) modelAnalyses.getValueAt(i, 1);
+                    String nom = (String) modelAnalyses.getValueAt(i, 2);
+                    double prix = (double) modelAnalyses.getValueAt(i, 3);
+                    int produitId = (int) modelAnalyses.getValueAt(i, 4); // Récupération CRUCIALE ici
+                    
+                    if (produitId > 0) nbProduitsLies++;
+
+                    analysesChoisies.add(new Analyse(id, nom, prix, "", produitId));
+                }
+            }
+
+            if (analysesChoisies.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Veuillez cocher au moins une analyse.");
+                return;
+            }
+
+            Dossier d = new Dossier(
+                p.getId(),
+                utilisateurConnecte.getId(), 
+                Date.valueOf(LocalDate.now()), 
+                total,
+                "NON_PAYE" 
+            );
+
+            dossierManager.creerDossier(d, analysesChoisies);
+
+            String msg = "Dossier créé avec succès !";
+            if (nbProduitsLies > 0) {
+                msg += "\n\nStock mis à jour : " + nbProduitsLies + " produit(s) déduit(s).";
+            } else {
+                msg += "\n\n⚠️ Info : Aucune analyse sélectionnée n'était liée au stock.";
+            }
+
+            JOptionPane.showMessageDialog(this, msg, "Information", JOptionPane.INFORMATION_MESSAGE);
+            this.dispose(); 
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Erreur : " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+
+    class PatientItem {
+        Patient patient;
+        public PatientItem(Patient p) { this.patient = p; }
+        
+    }
+}
