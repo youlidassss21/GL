@@ -1,0 +1,151 @@
+package presentation;
+
+import accesDonnees.AnalyseManager;
+import accesDonnees.StockManager; 
+import metier.Analyse;
+import metier.Produit;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.util.List;
+
+public class CatalogueAnalyses extends JFrame {
+
+    private AnalyseManager manager;
+    private StockManager stockManager; 
+    private JTable table;
+    private DefaultTableModel model;
+
+    private JTextField txtNom, txtPrix, txtRef;
+    private JComboBox<ProduitItem> cbProduits; 
+
+    public CatalogueAnalyses() {
+        manager = new AnalyseManager();
+        stockManager = new StockManager(); 
+        
+        setTitle("Catalogue des Analyses & Liaison Stock");
+        setSize(850, 600);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        JPanel panelForm = new JPanel(new GridLayout(5, 2, 10, 10)); 
+        panelForm.setBorder(BorderFactory.createTitledBorder("Nouvelle Analyse"));
+        panelForm.setBackground(new Color(240, 248, 255));
+        
+        txtNom = new JTextField();
+        txtPrix = new JTextField();
+        txtRef = new JTextField();
+        cbProduits = new JComboBox<>();
+        
+        chargerProduits();
+
+        panelForm.add(new JLabel("Nom Analyse :")); panelForm.add(txtNom);
+        panelForm.add(new JLabel("Prix (DA) :")); panelForm.add(txtPrix);
+        panelForm.add(new JLabel("Normes/Réf :")); panelForm.add(txtRef);
+        panelForm.add(new JLabel("Produit consommé :")); panelForm.add(cbProduits); // Nouveau champ
+
+        JButton btnAjouter = new JButton("Ajouter au catalogue");
+        btnAjouter.setBackground(new Color(60, 179, 113));
+        btnAjouter.setForeground(Color.WHITE);
+
+        String[] colonnes = {"ID", "Analyse", "Prix", "Normes", "Produit Lié (ID)"};
+        model = new DefaultTableModel(colonnes, 0);
+        table = new JTable(model);
+        JScrollPane scrollPane = new JScrollPane(table);
+
+        JButton btnSupprimer = new JButton("Supprimer Sélection");
+        btnSupprimer.setBackground(new Color(220, 20, 60));
+        btnSupprimer.setForeground(Color.WHITE);
+
+        btnAjouter.addActionListener(e -> ajouterAnalyse());
+        btnSupprimer.addActionListener(e -> supprimerAnalyse());
+
+        JPanel panelHaut = new JPanel(new BorderLayout());
+        panelHaut.add(panelForm, BorderLayout.CENTER);
+        panelHaut.add(btnAjouter, BorderLayout.SOUTH);
+
+        add(panelHaut, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
+        add(btnSupprimer, BorderLayout.SOUTH);
+
+        chargerTable();
+    }
+
+    private void chargerProduits() {
+        cbProduits.removeAllItems();
+        cbProduits.addItem(new ProduitItem(null)); 
+        
+        List<Produit> produits = stockManager.listerProduits();
+        for (Produit p : produits) {
+            cbProduits.addItem(new ProduitItem(p));
+        }
+    }
+
+    private void chargerTable() {
+        model.setRowCount(0);
+        for (Analyse a : manager.listerAnalyses()) {
+            model.addRow(new Object[]{
+                a.getId(), 
+                a.getNomAnalyse(), 
+                a.getPrix(), 
+                a.getValeursReference(), 
+                (a.getProduitId() > 0 ? a.getProduitId() : "Aucun") 
+            });
+        }
+    }
+
+    private void ajouterAnalyse() {
+        try {
+            String nom = txtNom.getText();
+            String prixStr = txtPrix.getText();
+            String ref = txtRef.getText();
+            
+            if (nom.isEmpty() || prixStr.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Nom et Prix obligatoires.");
+                return;
+            }
+
+            double prix = Double.parseDouble(prixStr);
+            
+            ProduitItem item = (ProduitItem) cbProduits.getSelectedItem();
+            int produitId = (item != null && item.produit != null) ? item.produit.getId() : 0;
+
+            Analyse a = new Analyse(nom, prix, ref, produitId);
+            manager.ajouterAnalyse(a);
+
+            JOptionPane.showMessageDialog(this, "Analyse ajoutée !");
+            chargerTable();
+            
+            txtNom.setText(""); txtPrix.setText(""); txtRef.setText("");
+            cbProduits.setSelectedIndex(0);
+
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Erreur : Le prix doit être un nombre.");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Erreur : " + ex.getMessage());
+        }
+    }
+
+    private void supprimerAnalyse() {
+        int row = table.getSelectedRow();
+        if (row != -1) {
+            try {
+                int id = (int) table.getValueAt(row, 0);
+                if (JOptionPane.showConfirmDialog(this, "Supprimer cette analyse ?", "Confirmer", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                    manager.supprimerAnalyse(id);
+                    chargerTable();
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+        } else {
+            JOptionPane.showMessageDialog(this, "Veuillez sélectionner une ligne.");
+        }
+    }
+
+    class ProduitItem {
+        Produit produit;
+        public ProduitItem(Produit p) { this.produit = p; }
+        @Override
+        public String toString() { return (produit == null) ? "Aucun" : produit.getNomProduit(); }
+    }
+}
