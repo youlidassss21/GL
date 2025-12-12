@@ -1,0 +1,134 @@
+package presentation;
+
+import accesDonnees.PatientManager;
+import metier.Patient;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.sql.Date;
+import java.sql.SQLException;
+
+public class GestionPatients extends JFrame {
+    private PatientManager manager;
+    private JTable table;
+    private DefaultTableModel model;
+    
+    private JTextField txtNom, txtPrenom, txtTel, txtDate;
+    private JComboBox<String> cbSexe;
+
+    public GestionPatients() {
+        manager = new PatientManager();
+        setTitle("Gestion des Patients");
+        setSize(700, 600); // Un peu plus grand
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        JPanel panelForm = new JPanel(new GridLayout(5, 2, 5, 5));
+        panelForm.setBorder(BorderFactory.createTitledBorder("Nouveau Patient"));
+        
+        txtNom = new JTextField();
+        txtPrenom = new JTextField();
+        txtDate = new JTextField("2000-01-01"); 
+        txtTel = new JTextField();
+        cbSexe = new JComboBox<>(new String[]{"H", "F"});
+
+        panelForm.add(new JLabel("Nom :")); panelForm.add(txtNom);
+        panelForm.add(new JLabel("Prénom :")); panelForm.add(txtPrenom);
+        panelForm.add(new JLabel("Date Naissance (YYYY-MM-DD) :")); panelForm.add(txtDate);
+        panelForm.add(new JLabel("Téléphone :")); panelForm.add(txtTel);
+        panelForm.add(new JLabel("Sexe :")); panelForm.add(cbSexe);
+
+        JButton btnAjouter = new JButton("Ajouter Patient");
+        btnAjouter.setBackground(new Color(60, 179, 113)); 
+        btnAjouter.setForeground(Color.WHITE);
+        btnAjouter.addActionListener(e -> ajouterPatient());
+
+        JPanel panelHaut = new JPanel(new BorderLayout());
+        panelHaut.add(panelForm, BorderLayout.CENTER);
+        panelHaut.add(btnAjouter, BorderLayout.SOUTH);
+
+        
+        String[] col = {"ID", "Nom", "Prénom", "Date Naissance", "Tél", "Sexe"};
+        model = new DefaultTableModel(col, 0);
+        table = new JTable(model);
+        JScrollPane scrollPane = new JScrollPane(table);
+
+        
+        JButton btnSupprimer = new JButton("Supprimer le patient sélectionné");
+        btnSupprimer.setBackground(new Color(220, 20, 60)); // Rouge
+        btnSupprimer.setForeground(Color.WHITE);
+        btnSupprimer.addActionListener(e -> supprimerPatient());
+
+        add(panelHaut, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
+        add(btnSupprimer, BorderLayout.SOUTH);
+
+        chargerTable();
+    }
+
+    private void chargerTable() {
+        model.setRowCount(0); 
+        for (Patient p : manager.listerPatients()) {
+            model.addRow(new Object[]{
+                p.getId(), p.getNom(), p.getPrenom(), p.getDateNaissance(), p.getTelephone(), p.getSexe()
+            });
+        }
+    }
+
+    private void ajouterPatient() {
+        try {
+            String nom = txtNom.getText();
+            String prenom = txtPrenom.getText();
+            Date dateN = Date.valueOf(txtDate.getText()); 
+            String tel = txtTel.getText();
+            String sexe = (String) cbSexe.getSelectedItem();
+
+            if (nom.isEmpty() || prenom.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Nom et Prénom obligatoires.");
+                return;
+            }
+
+            Patient p = new Patient(nom, prenom, dateN, tel, sexe);
+            manager.ajouterPatient(p);
+            
+            chargerTable(); 
+            JOptionPane.showMessageDialog(this, "Patient ajouté !");
+            
+            
+            txtNom.setText(""); txtPrenom.setText(""); txtTel.setText("");
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this, "Format de date invalide (Utilisez YYYY-MM-DD)", "Erreur", JOptionPane.WARNING_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Erreur : " + ex.getMessage());
+        }
+    }
+
+    
+    private void supprimerPatient() {
+        int ligneSelectionnee = table.getSelectedRow();
+        
+        if (ligneSelectionnee == -1) {
+            JOptionPane.showMessageDialog(this, "Veuillez sélectionner un patient dans le tableau.", "Aucune sélection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        
+        int id = (int) table.getValueAt(ligneSelectionnee, 0);
+        String nom = (String) table.getValueAt(ligneSelectionnee, 1);
+
+        int reponse = JOptionPane.showConfirmDialog(this, 
+                "Êtes-vous sûr de vouloir supprimer le patient : " + nom + " ?", 
+                "Confirmation", 
+                JOptionPane.YES_NO_OPTION);
+
+        if (reponse == JOptionPane.YES_OPTION) {
+            try {
+                manager.supprimerPatient(id);
+                chargerTable(); 
+                JOptionPane.showMessageDialog(this, "Patient supprimé.");
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Erreur SQL : " + ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+}
