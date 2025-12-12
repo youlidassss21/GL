@@ -1,0 +1,62 @@
+package accesDonnees;
+
+import metier.Analyse;
+import metier.Dossier;
+import java.sql.*;
+import java.util.List;
+
+public class DossierManager {
+    private final Connection connection;
+
+    public DossierManager() {
+        this.connection = DatabaseConnection.getInstance().getConnection();
+    }
+
+    public void creerDossier(Dossier d, List<Analyse> analysesChoisies) throws SQLException {
+        String sqlDossier = "INSERT INTO dossiers (patient_id, utilisateur_id, date_dossier, montant_total, etat_paiement) VALUES (?, ?, ?, ?, ?)";
+        
+        try (PreparedStatement ps = connection.prepareStatement(sqlDossier, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, d.getPatientId());
+            ps.setInt(2, d.getUtilisateurId());
+            ps.setDate(3, d.getDateDossier());
+            ps.setDouble(4, d.getMontantTotal());
+            ps.setString(5, d.getEtatPaiement());
+            
+            ps.executeUpdate();
+
+            ResultSet rs = ps.getGeneratedKeys();
+            int dossierId = 0;
+            if (rs.next()) {
+                dossierId = rs.getInt(1);
+            }
+
+            if (dossierId > 0 && !analysesChoisies.isEmpty()) {
+                
+                
+                String sqlResultat = "INSERT INTO resultats (dossier_id, analyse_id, resultat_trouve, prix_moment) VALUES (?, ?, ?, ?)";
+                
+                String sqlUpdateStock = "UPDATE stock SET quantite = quantite - 1 WHERE id = ? AND quantite > 0";
+                
+                try (PreparedStatement psRes = connection.prepareStatement(sqlResultat);
+                     PreparedStatement psStock = connection.prepareStatement(sqlUpdateStock)) {
+                    
+                    for (Analyse a : analysesChoisies) {
+                        psRes.setInt(1, dossierId);
+                        psRes.setInt(2, a.getId());      
+                        psRes.setString(3, "");          
+                        psRes.setDouble(4, a.getPrix()); 
+                        psRes.addBatch(); 
+
+                        
+                        if (a.getProduitId() > 0) {
+                            psStock.setInt(1, a.getProduitId());
+                            psStock.executeUpdate(); 
+                        }
+                    }
+                    
+                    psRes.executeBatch(); 
+                }
+            }
+        }
+    }
+}
