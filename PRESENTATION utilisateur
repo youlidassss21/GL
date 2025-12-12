@@ -1,0 +1,133 @@
+package presentation;
+
+import accesDonnees.UtilisateurManager;
+import metier.Utilisateur;
+import javax.swing.*;
+import java.awt.*;
+import java.sql.SQLException;
+
+public class GestionEmployer extends JFrame {
+    
+    private UtilisateurManager manager; 
+
+    public GestionEmployer() {
+        manager = new UtilisateurManager(); 
+
+        setTitle("Gestion des Employés");
+        setSize(500, 550); 
+        setLocationRelativeTo(null); 
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); 
+        
+       
+        JPanel panelForm = new JPanel(new GridLayout(6, 2, 15, 15));
+        panelForm.setBorder(BorderFactory.createTitledBorder("Informations de l'employé"));
+        panelForm.setBackground(new Color(240, 248, 255)); 
+        panelForm.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20)); 
+        
+        JTextField txtNom = new JTextField();
+        JTextField txtPrenom = new JTextField();
+        JTextField txtUsername = new JTextField(); 
+        
+        String[] roles = {"Biologiste", "Secretaire", "Admin"};
+        JComboBox<String> cbRole = new JComboBox<>(roles);
+        cbRole.setBackground(Color.WHITE);
+        
+        JPasswordField txtPassword = new JPasswordField();
+        
+        panelForm.add(new JLabel("Nom :")); panelForm.add(txtNom);
+        panelForm.add(new JLabel("Prénom :")); panelForm.add(txtPrenom);
+        panelForm.add(new JLabel("Rôle :")); panelForm.add(cbRole);
+        panelForm.add(new JLabel("Nom d'utilisateur (Login) :")); panelForm.add(txtUsername);
+        panelForm.add(new JLabel("Mot de passe :")); panelForm.add(txtPassword);
+        
+        
+        panelForm.add(new JLabel("")); 
+        JLabel lblInfo = new JLabel("Pour supprimer, seul le Login est requis");
+        lblInfo.setFont(new Font("Arial", Font.ITALIC, 10));
+        lblInfo.setForeground(Color.RED);
+        panelForm.add(lblInfo);
+
+
+        
+        JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        
+        JButton btnAjouter = new JButton("Enregistrer");
+        btnAjouter.setFont(new Font("Arial", Font.BOLD, 14));
+        btnAjouter.setBackground(new Color(60, 179, 113)); // Vert
+        btnAjouter.setForeground(Color.WHITE);
+        btnAjouter.setPreferredSize(new Dimension(150, 40));
+        
+        JButton btnSupprimer = new JButton("Supprimer");
+        btnSupprimer.setFont(new Font("Arial", Font.BOLD, 14));
+        btnSupprimer.setBackground(new Color(220, 20, 60)); // Rouge
+        btnSupprimer.setForeground(Color.WHITE);
+        btnSupprimer.setPreferredSize(new Dimension(150, 40));
+        
+        panelBoutons.add(btnAjouter);
+        panelBoutons.add(btnSupprimer);
+
+        
+        btnAjouter.addActionListener(e -> {
+            try {
+                String nom = txtNom.getText().trim();
+                String prenom = txtPrenom.getText().trim();
+                String role = (String) cbRole.getSelectedItem();
+                String username = txtUsername.getText().trim(); 
+                String password = new String(txtPassword.getPassword()); 
+                
+                if (nom.isEmpty() || prenom.isEmpty() || username.isEmpty() || password.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Tous les champs sont obligatoires pour l'ajout.", "Attention", JOptionPane.WARNING_MESSAGE);
+                    return; 
+                }
+
+                Utilisateur nouvelEmployer = new Utilisateur(nom, prenom, role, password, username);
+                manager.ajouterUtilisateur(nouvelEmployer);
+                
+                JOptionPane.showMessageDialog(this, "Employé ajouté avec succès !");
+                viderChamps(txtNom, txtPrenom, txtUsername, txtPassword);
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Erreur : " + ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        
+        btnSupprimer.addActionListener(e -> {
+            try {
+                String username = txtUsername.getText().trim();
+                
+                if (username.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Veuillez entrer le 'Nom d'utilisateur' (Login) pour supprimer.", "Manquant", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                int reponse = JOptionPane.showConfirmDialog(this, 
+                        "Voulez-vous vraiment supprimer l'utilisateur : " + username + " ?", 
+                        "Confirmation", 
+                        JOptionPane.YES_NO_OPTION);
+
+                if (reponse == JOptionPane.YES_OPTION) {
+                    manager.supprimerUtilisateur(username); // Appel au DAO
+                    JOptionPane.showMessageDialog(this, "Utilisateur supprimé !");
+                    viderChamps(txtNom, txtPrenom, txtUsername, txtPassword);
+                }
+
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Erreur suppression : " + ex.getMessage(), "Erreur SQL", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        
+        
+        JPanel container = new JPanel(new BorderLayout(10, 10));
+        container.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15)); 
+        
+        container.add(panelForm, BorderLayout.CENTER);
+        container.add(panelBoutons, BorderLayout.SOUTH); 
+        
+        this.setContentPane(container);
+    }
+    
+    private void viderChamps(JTextField nom, JTextField prenom, JTextField user, JTextField pass) {
+        nom.setText(""); prenom.setText(""); user.setText(""); pass.setText("");
+    }
+}
