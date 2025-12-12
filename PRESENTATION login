@@ -1,0 +1,58 @@
+package presentation;
+
+import accesDonnees.UtilisateurManager;
+import metier.Utilisateur;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+
+public class LoginLabo extends JFrame {
+    private JTextField txtUser;
+    private JPasswordField txtPass;
+    private UtilisateurManager manager;
+
+    public LoginLabo() {
+        manager = new UtilisateurManager();
+        setTitle("Laboratoire d'Analyse - Authentification");
+        setSize(400, 250);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setBackground(Color.blue);
+        
+        
+       
+        JPanel panel = new JPanel(new GridLayout(3, 2, 10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panel.setBackground(new Color(115, 194, 251));
+
+        panel.add(new JLabel("Utilisateur :"));
+        txtUser = new JTextField();
+        panel.add(txtUser);
+
+        panel.add(new JLabel("Mot de passe :"));
+        txtPass = new JPasswordField();
+        panel.add(txtPass);
+
+        JButton btnLogin = new JButton("Connexion");
+        btnLogin.setBackground(new Color(70, 130, 180)); 
+        btnLogin.setForeground(Color.WHITE);
+        
+        btnLogin.addActionListener((ActionEvent e) -> {
+            String user = txtUser.getText();
+            String pass = new String(txtPass.getPassword());
+            Utilisateur u = manager.verifierLogin(user, pass);
+            if (u != null) {
+                JOptionPane.showMessageDialog(this, "Bienvenue " + u.getPrenom());
+                new MenuPrincipal(u).setVisible(true);
+                this.dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Erreur d'identifiants", "Erreur", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        panel.add(new JLabel("")); 
+        panel.add(btnLogin);
+
+        add(panel);
+    }
+}
