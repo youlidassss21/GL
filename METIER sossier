@@ -1,0 +1,41 @@
+package metier;
+
+import java.sql.Date;
+
+public class Dossier {
+    private int id;
+    private int patientId;
+    private int utilisateurId;
+    private Date dateDossier;
+    private double montantTotal;
+    private String etatPaiement; 
+
+    
+    public Dossier(int id, int patientId, int utilisateurId, Date dateDossier, double montantTotal, String etatPaiement) {
+        this.id = id;
+        this.patientId = patientId;
+        this.utilisateurId = utilisateurId;
+        this.dateDossier = dateDossier;
+        this.montantTotal = montantTotal;
+        this.etatPaiement = etatPaiement;
+    }
+
+   
+    public Dossier(int patientId, int utilisateurId, Date dateDossier, double montantTotal, String etatPaiement) {
+        this.patientId = patientId;
+        this.utilisateurId = utilisateurId;
+        this.dateDossier = dateDossier;
+        this.montantTotal = montantTotal;
+        this.etatPaiement = etatPaiement;
+    }
+
+    
+    public int getId() { return id; }
+    public int getPatientId() { return patientId; }
+    public int getUtilisateurId() { return utilisateurId; }
+    public Date getDateDossier() { return dateDossier; }
+    public double getMontantTotal() { return montantTotal; }
+    public String getEtatPaiement() { return etatPaiement; }
+    
+    public void setId(int id) { this.id = id; }
+}
