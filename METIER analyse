@@ -1,0 +1,38 @@
+package metier;
+
+public class Analyse {
+    private int id;
+    private String nomAnalyse;
+    private double prix;
+    private String valeursReference;
+    private int produitId; 
+
+    public Analyse(int id, String nomAnalyse, double prix, String valeursReference, int produitId) {
+        this.id = id;
+        this.nomAnalyse = nomAnalyse;
+        this.prix = prix;
+        this.valeursReference = valeursReference;
+        this.produitId = produitId;
+    }
+
+    
+    public Analyse(String nomAnalyse, double prix, String valeursReference, int produitId) {
+        this.nomAnalyse = nomAnalyse;
+        this.prix = prix;
+        this.valeursReference = valeursReference;
+        this.produitId = produitId;
+    }
+
+    
+    public Analyse(int id, String nomAnalyse, double prix, String valeursReference) {
+        this(id, nomAnalyse, prix, valeursReference, 0);
+    }
+
+    public int getId() { return id; }
+    public String getNomAnalyse() { return nomAnalyse; }
+    public double getPrix() { return prix; }
+    public String getValeursReference() { return valeursReference; }
+    public int getProduitId() { return produitId; }
+    
+   
+}
