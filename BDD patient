@@ -1,0 +1,57 @@
+package accesDonnees;
+
+import metier.Patient;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class PatientManager {
+    private final Connection connection;
+
+    public PatientManager() {
+        this.connection = DatabaseConnection.getInstance().getConnection();
+    }
+
+    
+    public void ajouterPatient(Patient p) throws SQLException {
+        String sql = "INSERT INTO patients (nom, prenom, date_naissance, telephone, sexe) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, p.getNom());
+            ps.setString(2, p.getPrenom());
+            ps.setDate(3, p.getDateNaissance());
+            ps.setString(4, p.getTelephone());
+            ps.setString(5, p.getSexe());
+            ps.executeUpdate();
+        }
+    }
+
+    
+    public List<Patient> listerPatients() {
+        List<Patient> liste = new ArrayList<>();
+        String sql = "SELECT * FROM patients";
+        try (Statement st = connection.createStatement(); ResultSet rs = st.executeQuery(sql)) {
+            while (rs.next()) {
+                liste.add(new Patient(
+                    rs.getInt("id"),
+                    rs.getString("nom"),
+                    rs.getString("prenom"),
+                    rs.getDate("date_naissance"),
+                    rs.getString("telephone"),
+                    rs.getString("sexe")
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return liste;
+    }
+
+    
+    public void supprimerPatient(int id) throws SQLException {
+        String sql = "DELETE FROM patients WHERE id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        }
+    }
+}
